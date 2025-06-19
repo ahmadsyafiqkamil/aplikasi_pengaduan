@@ -73,4 +73,42 @@ export const reportsAPI = {
       method: 'DELETE'
     });
   }
+};
+
+// Settings API functions
+export const settingsAPI = {
+  getSettings: async () => {
+    const token = localStorage.getItem('token');
+    return apiCall('/settings', {
+      headers: {
+        ...(token && { 'Authorization': `Bearer ${token}` })
+      }
+    });
+  },
+
+  saveSetting: async (key: string, value: any, description?: string, category?: string) => {
+    const token = localStorage.getItem('token');
+    return apiCall('/settings', {
+      method: 'POST',
+      headers: {
+        ...(token && { 'Authorization': `Bearer ${token}` })
+      },
+      body: JSON.stringify({ key, value, description, category })
+    });
+  },
+
+  getAppConfig: async () => {
+    return apiCall('/settings/app-config');
+  },
+
+  updateAppConfig: async (configData: any) => {
+    const token = localStorage.getItem('token');
+    return apiCall('/settings/app-config', {
+      method: 'PUT',
+      headers: {
+        ...(token && { 'Authorization': `Bearer ${token}` })
+      },
+      body: JSON.stringify(configData)
+    });
+  }
 }; 

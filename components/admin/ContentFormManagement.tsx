@@ -34,16 +34,17 @@ const ContentFormManagement: React.FC = () => {
 
   useEffect(() => {
     const fetchSettings = async () => {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("auth_token");
       const response = await fetch("http://localhost:3000/api/settings", {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
       if (response.ok) {
-        const data = await response.json() as Setting[];
+        const res = await response.json();
+        const settingsArr: Setting[] = res.data || [];
         const settingsMap: SettingsMap = {};
-        data.forEach((setting: Setting) => {
+        settingsArr.forEach((setting: Setting) => {
           settingsMap[setting.key] = setting.value;
         });
         setFormData((prev) => ({
@@ -92,7 +93,7 @@ const ContentFormManagement: React.FC = () => {
   ]);
 
   const saveSetting = async (key: string, value: string) => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("auth_token");
     await fetch("http://localhost:3000/api/settings", {
       method: "POST",
       headers: {

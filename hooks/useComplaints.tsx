@@ -34,7 +34,7 @@ interface ComplaintsContextType {
     isApproved: boolean,
     supervisorNotes: string
   ) => Promise<Complaint | null>;
-  addNoteToComplaint: (complaintId: string, actor: User, note: string, actionPrefix?: string) => Promise<Complaint | null>;
+   addNoteToComplaint: (complaintId: string, actor: User, note: string, actionPrefix?: string) => Promise<Complaint | null>;
   fetchComplaints: () => Promise<void>;
 }
 
@@ -85,8 +85,8 @@ export const ComplaintsProvider: React.FC<{ children: ReactNode }> = ({ children
 
       if (response.success) {
         const newComplaint = response.data;
-        setComplaints(prev => [newComplaint, ...prev]);
-        return newComplaint;
+    setComplaints(prev => [newComplaint, ...prev]);
+    return newComplaint;
       } else {
         throw new Error(response.message || 'Failed to create complaint');
       }
@@ -103,7 +103,7 @@ export const ComplaintsProvider: React.FC<{ children: ReactNode }> = ({ children
     actor: User | { name: string, role: UserRole, id?: string }, 
     actionDescription: string,
     specificNoteForHistory?: string
-  ): Promise<Complaint | null> => {
+    ): Promise<Complaint | null> => {
     setError(null);
 
     try {
@@ -118,8 +118,8 @@ export const ComplaintsProvider: React.FC<{ children: ReactNode }> = ({ children
         const updatedComplaint = response.data;
         setComplaints(prev => 
           prev.map(c => c.id === id ? updatedComplaint : c)
-        );
-        return updatedComplaint;
+          );
+          return updatedComplaint;
       } else {
         throw new Error(response.message || 'Failed to update complaint');
       }
@@ -137,8 +137,8 @@ export const ComplaintsProvider: React.FC<{ children: ReactNode }> = ({ children
       const response = await reportsAPI.delete(id);
 
       if (response.success) {
-        setComplaints(prev => prev.filter(c => c.id !== id));
-        return true;
+    setComplaints(prev => prev.filter(c => c.id !== id));
+    return true;
       } else {
         throw new Error(response.message || 'Failed to delete complaint');
       }
@@ -153,8 +153,8 @@ export const ComplaintsProvider: React.FC<{ children: ReactNode }> = ({ children
     return updateComplaint(
       complaintId,
       {
-        assignedAgentId: agentId,
-        status: ComplaintStatus.DIPROSES,
+        assignedAgentId: agentId, 
+        status: ComplaintStatus.DIPROSES, 
         supervisorId: supervisor.id,
       },
       supervisor,
@@ -171,7 +171,7 @@ export const ComplaintsProvider: React.FC<{ children: ReactNode }> = ({ children
   ): Promise<Complaint | null> => {
     return updateComplaint(
       complaintId,
-      {
+      { 
         status: newStatus,
         agentFollowUpNotes: notes,
         ...(attachment && { attachment })
@@ -191,7 +191,7 @@ export const ComplaintsProvider: React.FC<{ children: ReactNode }> = ({ children
     return updateComplaint(
       complaintId,
       {
-        supervisorReviewNotes: supervisorNotes,
+      supervisorReviewNotes: supervisorNotes, 
         status: isApproved ? ComplaintStatus.SELESAI : ComplaintStatus.DITOLAK
       },
       supervisor,
@@ -202,9 +202,9 @@ export const ComplaintsProvider: React.FC<{ children: ReactNode }> = ({ children
   const addNoteToComplaint = async (complaintId: string, actor: User, note: string, actionPrefix?: string): Promise<Complaint | null> => {
     const actionDescription = actionPrefix ? `${actionPrefix}: ${note}` : note;
     return updateComplaint(
-      complaintId,
+        complaintId,
       {},
-      actor,
+        actor,
       actionDescription
     );
   };
@@ -223,7 +223,7 @@ export const ComplaintsProvider: React.FC<{ children: ReactNode }> = ({ children
     complaints.forEach(c => {
       if (c.status === ComplaintStatus.SELESAI || c.status === ComplaintStatus.DITOLAK) {
         const createTime = new Date(c.createdAt).getTime();
-        const resolveTime = new Date(c.updatedAt).getTime();
+        const resolveTime = new Date(c.updatedAt).getTime(); 
         totalResolutionTimeDays += (resolveTime - createTime) / (1000 * 60 * 60 * 24);
         resolvedCountForAvg++;
       }
@@ -246,33 +246,33 @@ export const ComplaintsProvider: React.FC<{ children: ReactNode }> = ({ children
     const agentPerformance: AgentStat[] = users
       .filter(user => user.role === UserRole.AGENT)
       .map(agent => {
-        const assignedToAgent = complaints.filter(c => c.assignedAgentId === agent.id);
-        const completedByAgent = assignedToAgent.filter(c => c.status === ComplaintStatus.SELESAI).length;
+      const assignedToAgent = complaints.filter(c => c.assignedAgentId === agent.id);
+      const completedByAgent = assignedToAgent.filter(c => c.status === ComplaintStatus.SELESAI).length;
         const inProgressByAgent = assignedToAgent.filter(c => 
           c.status === ComplaintStatus.DIPROSES || 
           c.status === ComplaintStatus.MENUNGGU_PERSETUJUAN_SPV
         ).length;
-
+      
         // Calculate agent's average resolution time
-        let agentTotalResolutionTimeDays = 0;
-        let agentResolvedCount = 0;
-        assignedToAgent.forEach(c => {
-          if (c.status === ComplaintStatus.SELESAI) {
+      let agentTotalResolutionTimeDays = 0;
+      let agentResolvedCount = 0;
+      assignedToAgent.forEach(c => {
+        if (c.status === ComplaintStatus.SELESAI) { 
             agentTotalResolutionTimeDays += (new Date(c.updatedAt).getTime() - new Date(c.createdAt).getTime()) / (1000 * 60 * 60 * 24);
-            agentResolvedCount++;
-          }
-        });
-        const avgAgentTimeDays = agentResolvedCount > 0 ? agentTotalResolutionTimeDays / agentResolvedCount : 0;
-
-        return {
-          agentId: agent.id,
-          agentName: agent.name,
-          totalAssigned: assignedToAgent.length,
-          totalCompleted: completedByAgent,
-          totalInProgress: inProgressByAgent,
-          avgResolutionTimeDays: avgAgentTimeDays,
-        };
+          agentResolvedCount++;
+        }
       });
+      const avgAgentTimeDays = agentResolvedCount > 0 ? agentTotalResolutionTimeDays / agentResolvedCount : 0;
+
+      return {
+        agentId: agent.id,
+        agentName: agent.name,
+        totalAssigned: assignedToAgent.length,
+        totalCompleted: completedByAgent,
+        totalInProgress: inProgressByAgent,
+        avgResolutionTimeDays: avgAgentTimeDays,
+      };
+    });
 
     return {
       totalComplaints,
@@ -290,20 +290,20 @@ export const ComplaintsProvider: React.FC<{ children: ReactNode }> = ({ children
   };
 
   return (
-    <ComplaintsContext.Provider value={{
-      complaints,
+    <ComplaintsContext.Provider value={{ 
+        complaints, 
       isLoading,
       error,
       clearError,
-      getComplaintById,
-      getComplaintByTrackingId,
-      addComplaint,
-      updateComplaint,
-      deleteComplaint,
-      getStats,
-      assignAgentToComplaint,
-      requestComplaintStatusChange,
-      approveOrRejectStatusChange,
+        getComplaintById, 
+        getComplaintByTrackingId, 
+        addComplaint, 
+        updateComplaint, 
+        deleteComplaint, 
+        getStats, 
+        assignAgentToComplaint, 
+        requestComplaintStatusChange, 
+        approveOrRejectStatusChange, 
       addNoteToComplaint,
       fetchComplaints,
     }}>

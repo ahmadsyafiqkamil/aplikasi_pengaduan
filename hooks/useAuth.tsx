@@ -8,11 +8,15 @@ const API_BASE_URL = 'http://localhost:3000/api';
 
 interface AuthContextType {
   loggedInUser: User | null;
+  users: User[];
   login: (username: string, password: string) => Promise<User | null>;
   logout: () => void;
   isLoading: boolean;
   error: string | null;
   clearError: () => void;
+  addUser: (userData: Omit<User, 'id'>) => Promise<void>;
+  updateUser: (userId: string, updates: Partial<User>) => Promise<void>;
+  deleteUser: (userId: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,8 +34,35 @@ const normalizeUserRole = (role: string): UserRole => {
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [loggedInUser, setLoggedInUser] = useState<User | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Fetch users when component mounts
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/auth/users`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+          }
+        });
+        const data = await response.json();
+        if (data.success) {
+          setUsers(data.data.map((user: any) => ({
+            ...user,
+            role: normalizeUserRole(user.role)
+          })));
+        }
+      } catch (error) {
+        console.error('Failed to fetch users:', error);
+      }
+    };
+
+    if (loggedInUser?.role === UserRole.ADMIN) {
+      fetchUsers();
+    }
+  }, [loggedInUser]);
 
   // Check for existing token on app start
   useEffect(() => {
@@ -92,6 +123,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const logout = () => {
     authAPI.logout();
     setLoggedInUser(null);
+    setUsers([]);
     setError(null);
   };
 
@@ -99,14 +131,83 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setError(null);
   };
 
+  const addUser = async (userData: Omit<User, 'id'>) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/users`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        },
+        body: JSON.stringify(userData)
+      });
+      const data = await response.json();
+      if (data.success) {
+        setUsers(prev => [...prev, { ...data.data, role: normalizeUserRole(data.data.role) }]);
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const updateUser = async (userId: string, updates: Partial<User>) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/users/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        },
+        body: JSON.stringify(updates)
+      });
+      const data = await response.json();
+      if (data.success) {
+        setUsers(prev => prev.map(user => 
+          user.id === userId 
+            ? { ...user, ...data.data, role: normalizeUserRole(data.data.role) }
+            : user
+        ));
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const deleteUser = async (userId: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/users/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setUsers(prev => prev.filter(user => user.id !== userId));
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      throw error;
+    }
+  };
+
   return (
     <AuthContext.Provider value={{ 
       loggedInUser, 
+      users,
       login, 
       logout, 
       isLoading, 
       error, 
-      clearError 
+      clearError,
+      addUser,
+      updateUser,
+      deleteUser
     }}>
       {children}
     </AuthContext.Provider>
