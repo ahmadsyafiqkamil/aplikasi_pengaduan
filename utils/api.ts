@@ -102,21 +102,12 @@ export const reportsAPI = {
 // Settings API functions
 export const settingsAPI = {
   getSettings: async () => {
-    const token = localStorage.getItem('token');
-    return apiCall('/settings', {
-      headers: {
-        ...(token && { 'Authorization': `Bearer ${token}` })
-      }
-    });
+    return apiCall('/settings');
   },
 
   saveSetting: async (key: string, value: any, description?: string, category?: string) => {
-    const token = localStorage.getItem('token');
     return apiCall('/settings', {
       method: 'POST',
-      headers: {
-        ...(token && { 'Authorization': `Bearer ${token}` })
-      },
       body: JSON.stringify({ key, value, description, category })
     });
   },
@@ -126,12 +117,8 @@ export const settingsAPI = {
   },
 
   updateAppConfig: async (configData: any) => {
-    const token = localStorage.getItem('token');
     return apiCall('/settings/app-config', {
       method: 'PUT',
-      headers: {
-        ...(token && { 'Authorization': `Bearer ${token}` })
-      },
       body: JSON.stringify(configData)
     });
   }

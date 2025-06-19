@@ -43,8 +43,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const fetchUsers = async () => {
       try {
         const data = await authAPI.getUsers();
-        if (data.success && data.data.rows) {
-          setUsers(data.data.rows);
+        if (data.success && data.data && Array.isArray(data.data.users)) {
+          setUsers(data.data.users);
         }
       } catch (error) {
         console.error('Failed to fetch users:', error);

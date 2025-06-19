@@ -35,6 +35,9 @@ const CheckIcon: React.FC<{className?: string}> = ({className = "w-4 h-4"}) => (
 
 
 const ComplaintDetailsView: React.FC<ComplaintDetailsViewProps> = ({ complaint, showFullDetails = false, showAgentRequestInfo = false }) => {
+  if (!complaint) {
+    return <div>No complaint data found.</div>;
+  }
   const { config } = useAppConfig(); // To get custom field labels
   const { getUserById } = useAuth(); // To get supervisor name if needed
   const [copiedTrackingId, setCopiedTrackingId] = useState(false);
@@ -90,7 +93,7 @@ const ComplaintDetailsView: React.FC<ComplaintDetailsViewProps> = ({ complaint, 
       <DetailItem label="Waktu Kejadian" value={formatDate(complaint.incidentTime)} />
       <DetailItem label="Deskripsi Pengaduan" value={<p className="whitespace-pre-wrap text-gray-800">{complaint.description}</p>} fullWidth className="pt-2 pb-3 border-t border-b my-2" />
 
-      {Object.keys(complaint.customFieldData).length > 0 && (
+      {complaint.customFieldData && Object.keys(complaint.customFieldData).length > 0 && (
         <div className="py-2 sm:col-span-2">
             <dt className="text-sm font-medium text-gray-500 mb-1">Informasi Tambahan:</dt>
             {config.customFormFields.filter(f => complaint.customFieldData[f.id] && f.isVisible).map(fieldDef => (

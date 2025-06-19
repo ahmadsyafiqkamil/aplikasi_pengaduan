@@ -296,10 +296,10 @@ const assignComplaint = async (req, res) => {
 // Get complaint by tracking ID (public)
 const getComplaintByTrackingId = async (req, res) => {
   try {
-    const { tracking_id } = req.params;
+    const { trackingId } = req.params;
 
     const complaint = await Complaint.findOne({
-      where: { tracking_id },
+      where: { tracking_id: trackingId },
       include: [
         {
           model: ComplaintHistory,

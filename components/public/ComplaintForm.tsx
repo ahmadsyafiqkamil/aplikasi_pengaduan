@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppConfig } from '../../hooks/useAppConfig';
@@ -107,15 +106,15 @@ const ComplaintForm: React.FC = () => {
     setSuccessMessage(null);
     try {
       const complaintData = {
-        isAnonymous,
-        reporterName: isAnonymous ? undefined : reporterName,
-        reporterEmail: isAnonymous ? undefined : reporterEmail,
-        reporterWhatsApp: isAnonymous ? undefined : reporterWhatsApp,
-        serviceType: serviceType as ServiceType, 
-        incidentTime,
+        is_anonymous: isAnonymous,
+        reporter_name: isAnonymous ? undefined : reporterName,
+        reporter_email: isAnonymous ? undefined : reporterEmail,
+        reporter_whatsapp: isAnonymous ? undefined : reporterWhatsApp,
+        service_type: serviceType as ServiceType,
+        incident_time: new Date(incidentTime).toISOString(),
         description,
         attachments,
-        customFieldData,
+        custom_field_data: customFieldData,
       };
       const newComplaint = await addComplaint(complaintData);
       setSuccessMessage(TEXTS.successMessage.replace('{trackingId}', newComplaint.trackingId));

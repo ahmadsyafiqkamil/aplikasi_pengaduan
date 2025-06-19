@@ -26,7 +26,11 @@ const UserManagement: React.FC = () => {
   });
   const [error, setError] = useState<string | null>(null);
 
-  const internalUsers = users.filter(u => u.role === UserRole.SUPERVISOR || u.role === UserRole.AGENT || u.role === UserRole.ADMIN);
+  const internalUsers = users.filter(u =>
+    u.role?.toLowerCase() === 'supervisor' ||
+    u.role?.toLowerCase() === 'agent' ||
+    u.role?.toLowerCase() === 'admin'
+  );
 
   const openModalForNew = () => {
     setEditingUser(null);

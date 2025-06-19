@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import PageWrapper from '../components/layout/PageWrapper';
 import Input from '../components/common/Input';
@@ -9,6 +8,7 @@ import { Complaint, ComplaintHistoryEntry, UserRole } from '../types';
 import ComplaintDetailsView from '../components/shared/ComplaintDetailsView';
 import ComplaintHistoryView from '../components/shared/ComplaintHistoryView'; // Assuming users prop can be empty for public view
 import { useAuth } from '../hooks/useAuth'; // To pass users (empty for public) to history view
+import { reportsAPI } from '../utils/api';
 
 const TrackComplaintPage: React.FC = () => {
   const [trackingId, setTrackingId] = useState('');
@@ -18,7 +18,7 @@ const TrackComplaintPage: React.FC = () => {
   const { getComplaintByTrackingId } = useComplaints();
   const { users } = useAuth(); // Get all users, but will be filtered or not used for sensitive data
 
-  const handleTrackComplaint = () => {
+  const handleTrackComplaint = async () => {
     if (!trackingId.trim()) {
       setError("ID Laporan tidak boleh kosong.");
       setComplaint(null);
@@ -28,16 +28,45 @@ const TrackComplaintPage: React.FC = () => {
     setError(null);
     setComplaint(null);
 
-    // Simulate API call delay
-    setTimeout(() => {
-      const foundComplaint = getComplaintByTrackingId(trackingId.trim());
-      if (foundComplaint) {
-        setComplaint(foundComplaint);
+    try {
+      const response = await reportsAPI.getByTrackingId(trackingId.trim());
+      if (response.success && response.data) {
+        const c = response.data;
+        const mappedComplaint: Complaint = {
+          id: c.id,
+          trackingId: c.tracking_id,
+          isAnonymous: c.is_anonymous,
+          reporterName: c.reporter_name,
+          reporterEmail: c.reporter_email,
+          reporterWhatsApp: c.reporter_whatsapp,
+          serviceType: c.service_type,
+          incidentTime: c.incident_time,
+          description: c.description,
+          customFieldData: c.custom_field_data,
+          status: c.status,
+          assignedAgentId: c.assigned_agent_id,
+          supervisorId: c.supervisor_id,
+          agentFollowUpNotes: c.agent_follow_up_notes,
+          requestedStatusChange: c.requested_status_change,
+          statusChangeRequestNotes: c.status_change_request_notes,
+          supervisorReviewNotes: c.supervisor_review_notes,
+          priority: c.priority,
+          estimatedResolutionDays: c.estimated_resolution_days,
+          actualResolutionDate: c.actual_resolution_date,
+          createdAt: c.created_at || c.createdAt,
+          updatedAt: c.updated_at || c.updatedAt,
+          assignedAgentName: c.assignedAgent?.name || null,
+          history: c.history || [],
+        };
+        setComplaint(mappedComplaint);
       } else {
         setError("ID Laporan tidak ditemukan atau tidak valid. Mohon periksa kembali.");
       }
+    } catch (err) {
+      setError("Terjadi kesalahan saat menghubungi server.");
+    } finally {
       setIsLoading(false);
-    }, 500);
+    }
   };
 
   const handleSearchAgain = () => {

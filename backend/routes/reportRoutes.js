@@ -24,7 +24,7 @@ const {
 
 // Public routes
 router.post('/', validateCreateComplaint, createComplaint);
-router.get('/track/:tracking_id', getComplaintByTrackingId);
+// router.get('/track/:tracking_id', getComplaintByTrackingId);
 
 // Protected routes
 router.get('/', authenticateToken, validatePagination, getComplaints);
@@ -33,5 +33,7 @@ router.put('/:id', authenticateToken, validateUUID, validateUpdateComplaint, upd
 
 // Admin/Supervisor routes
 router.post('/assign', authenticateToken, requireSupervisor, assignComplaint);
+
+router.get('/tracking/:trackingId', getComplaintByTrackingId);
 
 module.exports = router;

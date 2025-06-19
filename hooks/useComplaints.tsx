@@ -10,7 +10,7 @@ interface ComplaintsContextType {
   clearError: () => void;
   getComplaintById: (id: string) => Complaint | undefined;
   getComplaintByTrackingId: (trackingId: string) => Complaint | undefined;
-  addComplaint: (data: Omit<Complaint, 'id' | 'trackingId' | 'status' | 'createdAt' | 'updatedAt' | 'history' | 'assignedAgentName'>) => Promise<Complaint>;
+  addComplaint: (data: any) => Promise<Complaint>;
   updateComplaint: (
     id: string, 
     updates: Partial<Complaint>, 
@@ -50,11 +50,10 @@ export const ComplaintsProvider: React.FC<{ children: ReactNode }> = ({ children
   const fetchComplaints = async () => {
     setIsLoading(true);
     setError(null);
-
     try {
       const data = await reportsAPI.getAll();
-      if (data.success) {
-        setComplaints(data.data.complaints || []);
+      if (data.success && data.data && Array.isArray(data.data.complaints)) {
+        setComplaints(data.data.complaints);
       }
     } catch (error) {
       console.error('Failed to fetch complaints:', error);
@@ -77,7 +76,7 @@ export const ComplaintsProvider: React.FC<{ children: ReactNode }> = ({ children
     return complaints.find(c => c.trackingId === trackingId);
   };
 
-  const addComplaint = async (data: Omit<Complaint, 'id' | 'trackingId' | 'status' | 'createdAt' | 'updatedAt' | 'history' | 'assignedAgentName'>): Promise<Complaint> => {
+  const addComplaint = async (data: any): Promise<Complaint> => {
     setError(null);
 
     try {
@@ -85,8 +84,8 @@ export const ComplaintsProvider: React.FC<{ children: ReactNode }> = ({ children
 
       if (response.success) {
         const newComplaint = response.data;
-    setComplaints(prev => [newComplaint, ...prev]);
-    return newComplaint;
+        setComplaints(prev => [newComplaint, ...prev]);
+        return newComplaint;
       } else {
         throw new Error(response.message || 'Failed to create complaint');
       }
