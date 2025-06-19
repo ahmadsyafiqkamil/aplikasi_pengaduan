@@ -35,6 +35,30 @@ export const authAPI = {
     return apiCall('/auth/profile');
   },
 
+  getUsers: async () => {
+    return apiCall('/auth/users');
+  },
+
+  addUser: async (userData: any) => {
+    return apiCall('/auth/users', {
+      method: 'POST',
+      body: JSON.stringify(userData)
+    });
+  },
+
+  updateUser: async (userId: string, updates: any) => {
+    return apiCall(`/auth/users/${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates)
+    });
+  },
+
+  deleteUser: async (userId: string) => {
+    return apiCall(`/auth/users/${userId}`, {
+      method: 'DELETE'
+    });
+  },
+
   logout: () => {
     localStorage.removeItem('auth_token');
   }

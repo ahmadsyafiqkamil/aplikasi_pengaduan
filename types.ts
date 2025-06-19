@@ -1,4 +1,3 @@
-
 export enum UserRole {
   PUBLIC = "PUBLIC",
   ADMIN = "ADMIN",
@@ -141,4 +140,20 @@ export interface AgentStat {
   totalCompleted: number;
   totalInProgress: number;
   avgResolutionTimeDays: number;
+}
+
+export interface CreateUserRequest {
+  name: string;
+  username: string;
+  password: string;
+  role: string;
+  service_types_handled?: string[];
+}
+
+export interface UpdateUserRequest {
+  name?: string;
+  username?: string;
+  newPassword?: string;
+  role?: string;
+  service_types_handled?: string[];
 }

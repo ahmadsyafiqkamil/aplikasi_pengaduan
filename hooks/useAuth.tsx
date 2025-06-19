@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, UserRole } from '../types';
+import { User, UserRole, CreateUserRequest, UpdateUserRequest } from '../types';
 import { LOCAL_STORAGE_KEYS } from '../constants';
 import { authAPI } from '../utils/api';
 
@@ -14,8 +14,8 @@ interface AuthContextType {
   isLoading: boolean;
   error: string | null;
   clearError: () => void;
-  addUser: (userData: Omit<User, 'id'>) => Promise<void>;
-  updateUser: (userId: string, updates: Partial<User>) => Promise<void>;
+  addUser: (userData: CreateUserRequest) => Promise<void>;
+  updateUser: (userId: string, updates: UpdateUserRequest) => Promise<void>;
   deleteUser: (userId: string) => Promise<void>;
 }
 
@@ -42,17 +42,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/auth/users`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-          }
-        });
-        const data = await response.json();
-        if (data.success) {
-          setUsers(data.data.map((user: any) => ({
-            ...user,
-            role: normalizeUserRole(user.role)
-          })));
+        const data = await authAPI.getUsers();
+        if (data.success && data.data.rows) {
+          setUsers(data.data.rows);
         }
       } catch (error) {
         console.error('Failed to fetch users:', error);
@@ -131,17 +123,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setError(null);
   };
 
-  const addUser = async (userData: Omit<User, 'id'>) => {
+  const addUser = async (userData: CreateUserRequest) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/users`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-        },
-        body: JSON.stringify(userData)
-      });
-      const data = await response.json();
+      const data = await authAPI.addUser(userData);
       if (data.success) {
         setUsers(prev => [...prev, { ...data.data, role: normalizeUserRole(data.data.role) }]);
       } else {
@@ -152,17 +136,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const updateUser = async (userId: string, updates: Partial<User>) => {
+  const updateUser = async (userId: string, updates: UpdateUserRequest) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/users/${userId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-        },
-        body: JSON.stringify(updates)
-      });
-      const data = await response.json();
+      const data = await authAPI.updateUser(userId, updates);
       if (data.success) {
         setUsers(prev => prev.map(user => 
           user.id === userId 
@@ -179,13 +155,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const deleteUser = async (userId: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/users/${userId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-        }
-      });
-      const data = await response.json();
+      const data = await authAPI.deleteUser(userId);
       if (data.success) {
         setUsers(prev => prev.filter(user => user.id !== userId));
       } else {

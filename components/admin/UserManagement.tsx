@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { User, UserRole, ServiceType } from '../../types';
+import { User, UserRole, ServiceType, CreateUserRequest, UpdateUserRequest } from '../../types';
 import { SERVICE_TYPES_AVAILABLE, ROLES_CONFIG } from '../../constants';
 import Button from '../common/Button';
 import Modal from '../common/Modal';
@@ -69,22 +69,23 @@ const UserManagement: React.FC = () => {
 
     try {
       if (editingUser) {
-        const updates: Partial<User> & {newPassword?: string} = {
-            name: formData.name,
-            username: formData.username, 
-            role: formData.role,
-            serviceTypesHandled: formData.serviceTypesHandled,
+        const updates: UpdateUserRequest = {
+          name: formData.name,
+          username: formData.username,
+          role: formData.role.toLowerCase(),
+          service_types_handled: formData.serviceTypesHandled,
         };
         if(formData.password) updates.newPassword = formData.password;
         await updateUser(editingUser.id, updates);
       } else {
-        await addUser({
+        const newUser: CreateUserRequest = {
           name: formData.name,
           username: formData.username,
-          password: formData.password!, 
-          role: formData.role,
-          serviceTypesHandled: formData.serviceTypesHandled,
-        });
+          password: formData.password!,
+          role: formData.role.toLowerCase(),
+          service_types_handled: formData.serviceTypesHandled,
+        };
+        await addUser(newUser);
       }
       setIsModalOpen(false);
     } catch (err: any) {
