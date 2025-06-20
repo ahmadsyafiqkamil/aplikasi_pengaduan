@@ -19,7 +19,7 @@ const generateTrackingId = async () => {
   
   if (latestComplaint) {
     // Extract sequence number from existing tracking ID
-    const match = latestComplaint.tracking_id.match(new RegExp(`${prefix}-${year}-(\\d+)`));
+    const match = latestComplaint.trackingId.match(new RegExp(`${prefix}-${year}-(\\d+)`));
     if (match) {
       sequence = parseInt(match[1]) + 1;
     }

@@ -172,15 +172,21 @@ export const ComplaintsProvider: React.FC<{ children: ReactNode }> = ({ children
     notes: string, 
     attachment?: ComplaintAttachment
   ): Promise<Complaint | null> => {
+    const updates: Partial<Complaint> = {
+      status: ComplaintStatus.MENUNGGU_PERSETUJUAN_SPV,
+      requestedStatusChange: newStatus,
+      statusChangeRequestNotes: notes,
+      agentFollowUpNotes: undefined, // Clear this as it's now a request note
+    };
+    if (attachment) {
+      updates.agentUploadedAttachment = attachment;
+    }
+
     return updateComplaint(
       complaintId,
-      { 
-        status: newStatus,
-        agentFollowUpNotes: notes,
-        ...(attachment && { attachment })
-      },
+      updates,
       agent,
-      `Status pengaduan diubah menjadi ${newStatus}.`
+      `Mengajukan perubahan status ke "${newStatus}" untuk persetujuan.`
     );
   };
 
@@ -190,25 +196,40 @@ export const ComplaintsProvider: React.FC<{ children: ReactNode }> = ({ children
     isApproved: boolean,
     supervisorNotes: string
   ): Promise<Complaint | null> => {
+    // Find the complaint to get its requested status change
+    const complaint = complaints.find(c => c.id === complaintId);
+    if (!complaint || !complaint.requestedStatusChange) {
+      throw new Error("Pengaduan tidak ditemukan atau tidak ada permintaan perubahan status.");
+    }
+    
+    const finalStatus = isApproved ? complaint.requestedStatusChange : ComplaintStatus.DIPROSES;
     const action = isApproved ? 'disetujui' : 'ditolak';
+    const actionDescription = `Permintaan perubahan status ke "${complaint.requestedStatusChange}" telah ${action} oleh supervisor.`;
+
     return updateComplaint(
       complaintId,
       {
-      supervisorReviewNotes: supervisorNotes, 
-        status: isApproved ? ComplaintStatus.SELESAI : ComplaintStatus.DITOLAK
+        status: finalStatus,
+        supervisorReviewNotes: supervisorNotes,
+        // Clear request fields after action
+        requestedStatusChange: undefined,
+        statusChangeRequestNotes: undefined,
+        agentUploadedAttachment: undefined, // Also clear any pending attachment
       },
       supervisor,
-      `Perubahan status pengaduan ${action}.`
+      actionDescription,
+      supervisorNotes
     );
   };
 
   const addNoteToComplaint = async (complaintId: string, actor: User, note: string, actionPrefix?: string): Promise<Complaint | null> => {
-    const actionDescription = actionPrefix ? `${actionPrefix}: ${note}` : note;
+    const actionDescription = actionPrefix || 'Catatan baru ditambahkan';
     return updateComplaint(
-        complaintId,
-      {},
-        actor,
-      actionDescription
+      complaintId,
+      { agentFollowUpNotes: note },
+      actor,
+      actionDescription,
+      note // Pass the note itself for history
     );
   };
 

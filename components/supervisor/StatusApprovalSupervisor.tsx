@@ -22,10 +22,9 @@ const StatusApprovalSupervisor: React.FC = () => {
   const complaintsAwaitingApproval = useMemo(() => {
     return complaints.filter(c => 
       supervisorServiceTypes.includes(c.serviceType) &&
-      c.status === ComplaintStatus.MENUNGGU_PERSETUJUAN_SPV &&
-      c.supervisorId === loggedInUser?.id 
+      c.status === ComplaintStatus.MENUNGGU_PERSETUJUAN_SPV
     ).sort((a,b) => new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime());
-  }, [complaints, supervisorServiceTypes, loggedInUser]);
+  }, [complaints, supervisorServiceTypes]);
 
   const handleOpenReviewModal = (complaint: Complaint) => {
     setSelectedComplaint(complaint);

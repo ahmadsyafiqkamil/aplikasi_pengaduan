@@ -236,24 +236,46 @@ const updateComplaint = async (req, res) => {
     const oldStatus = complaint.status;
     await complaint.update(updateData);
 
-    // Create history entry if status changed
+    const actor = req.body.actor || req.user;
+    const actionDescription = req.body.actionDescription || 'Detail pengaduan diperbarui';
+    const noteForHistory = req.body.specificNoteForHistory || updateData.supervisorReviewNotes || updateData.agentFollowUpNotes;
+
+    // Create history entry
     if (updateData.status && updateData.status !== oldStatus) {
-      await ComplaintHistory.create({
+       await ComplaintHistory.create({
         complaint_id: complaint.id,
-        user_id: req.user.id,
-        user_name: req.user.name,
-        user_role: req.user.role,
-        action: `Status diubah dari "${oldStatus}" ke "${updateData.status}"`,
+        user_id: actor.id,
+        user_name: actor.name,
+        user_role: actor.role,
+        action: actionDescription, // Use the more descriptive action
         old_status: oldStatus,
         new_status: updateData.status,
-        notes: updateData.notes
+        notes: noteForHistory
+      });
+    } else if (noteForHistory) { // Create history for notes even if status doesn't change
+      await ComplaintHistory.create({
+        complaint_id: complaint.id,
+        user_id: actor.id,
+        user_name: actor.name,
+        user_role: actor.role,
+        action: actionDescription,
+        notes: noteForHistory
       });
     }
+    
+    // Eagerly load the associations to return the full object
+    const updatedComplaintWithDetails = await Complaint.findByPk(complaint.id, {
+      include: [
+        { model: User, as: 'assignedAgent', attributes: ['id', 'name', 'username'] },
+        { model: User, as: 'supervisor', attributes: ['id', 'name', 'username'] },
+        { model: ComplaintHistory, as: 'history', order: [['created_at', 'DESC']] }
+      ]
+    });
 
     res.json({
       success: true,
       message: 'Pengaduan berhasil diupdate',
-      data: complaint
+      data: updatedComplaintWithDetails
     });
   } catch (error) {
     console.error('Update complaint error:', error);
