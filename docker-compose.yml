@@ -1,13 +1,77 @@
-
 version: '3.8'
+
 services:
+  db:
+    image: mysql:8.0
+    container_name: pengaduan-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword # Ganti dengan password yang kuat di produksi
+      MYSQL_DATABASE: pengaduan_db
+    ports:
+      # Port 3306 di host akan dipetakan ke port 3306 di kontainer
+      # Berguna untuk menghubungkan alat database dari luar kontainer
+      - "3307:3306" 
+    volumes:
+      # Menyimpan data MySQL secara persisten
+      - mysql_data:/var/lib/mysql
+      # Menjalankan skrip SQL saat database pertama kali dibuat
+      - ./database_setup.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   backend:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.backend
+    container_name: pengaduan-backend
+    restart: always
     ports:
       - "3000:3000"
-    volumes:
-      - ./backend:/app/backend
     environment:
-      - NODE_ENV=development
+      # Variabel lingkungan untuk koneksi database
+      DB_HOST: db
+      DB_USER: root
+      DB_PASSWORD: rootpassword # Harus sama dengan MYSQL_ROOT_PASSWORD
+      DB_NAME: pengaduan_db     # Harus sama dengan MYSQL_DATABASE
+      DB_PORT: 3306
+      # Variabel lain yang mungkin dibutuhkan oleh aplikasi Anda
+      JWT_SECRET: "your-super-secret-jwt-key-that-is-long-and-secure"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: pengaduan-phpmyadmin
+    restart: always
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      MYSQL_ROOT_PASSWORD: rootpassword # Harus sama dengan password db
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Memberi tahu frontend alamat API backend di dalam jaringan Docker
+        VITE_API_BASE_URL: http://localhost:3000/api 
+    container_name: pengaduan-frontend
+    restart: always
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data:
+    driver: local

@@ -1,62 +1,68 @@
 // API Configuration
-export const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
-// API helper function
-export const apiCall = async (endpoint: string, options: RequestInit = {}) => {
-  const token = localStorage.getItem('auth_token');
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` }),
-      ...options.headers,
-    },
+const apiCall = async (method: string, path: string, body?: any, token?: string | null) => {
+  const url = `${API_BASE_URL}${path}`;
+  
+  const headers = new Headers({
+    'Content-Type': 'application/json',
   });
 
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || 'API request failed');
+  if (token) {
+    headers.append('Authorization', `Bearer ${token}`);
   }
 
-  return data;
+  const config: RequestInit = {
+    method: method.toUpperCase(),
+    headers: headers,
+  };
+
+  if (body) {
+    config.body = JSON.stringify(body);
+  }
+
+  try {
+    const response = await fetch(url, config);
+    const data = await response.json();
+
+    if (!response.ok) {
+      // Log the detailed error from the server
+      console.error('API Error:', data);
+      throw new Error(data.message || 'An unknown error occurred');
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('API Call Failed:', error);
+    // Re-throw the error to be caught by the calling function
+    throw error;
+  }
 };
 
 // Auth API functions
 export const authAPI = {
   login: async (username: string, password: string) => {
-    return apiCall('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ username, password })
-    });
+    return apiCall('POST', '/auth/login', { username, password });
   },
 
   getProfile: async () => {
-    return apiCall('/auth/profile');
+    return apiCall('GET', '/auth/profile');
   },
 
   getUsers: async () => {
-    return apiCall('/auth/users');
+    return apiCall('GET', '/auth/users');
   },
 
   addUser: async (userData: any) => {
-    return apiCall('/auth/users', {
-      method: 'POST',
-      body: JSON.stringify(userData)
-    });
+    return apiCall('POST', '/auth/users', userData);
   },
 
   updateUser: async (userId: string, updates: any) => {
-    return apiCall(`/auth/users/${userId}`, {
-      method: 'PUT',
-      body: JSON.stringify(updates)
-    });
+    return apiCall('PUT', `/auth/users/${userId}`, updates);
   },
 
   deleteUser: async (userId: string) => {
-    return apiCall(`/auth/users/${userId}`, {
-      method: 'DELETE'
-    });
+    return apiCall('DELETE', `/auth/users/${userId}`);
   },
 
   logout: () => {
@@ -67,59 +73,45 @@ export const authAPI = {
 // Reports API functions
 export const reportsAPI = {
   getAll: async (page = 1, limit = 10) => {
-    return apiCall(`/reports?page=${page}&limit=${limit}`);
+    return apiCall('GET', `/reports?page=${page}&limit=${limit}`);
   },
 
   getById: async (id: string) => {
-    return apiCall(`/reports/${id}`);
+    return apiCall('GET', `/reports/${id}`);
   },
 
   getByTrackingId: async (trackingId: string) => {
-    return apiCall(`/reports/tracking/${trackingId}`);
+    return apiCall('GET', `/reports/tracking/${trackingId}`);
   },
 
   create: async (data: any) => {
-    return apiCall('/reports', {
-      method: 'POST',
-      body: JSON.stringify(data)
-    });
+    return apiCall('POST', '/reports', data);
   },
 
   update: async (id: string, data: any) => {
-    return apiCall(`/reports/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data)
-    });
+    return apiCall('PUT', `/reports/${id}`, data);
   },
 
   delete: async (id: string) => {
-    return apiCall(`/reports/${id}`, {
-      method: 'DELETE'
-    });
+    return apiCall('DELETE', `/reports/${id}`);
   }
 };
 
 // Settings API functions
 export const settingsAPI = {
   getSettings: async () => {
-    return apiCall('/settings');
+    return apiCall('GET', '/settings');
   },
 
   saveSetting: async (key: string, value: any, description?: string, category?: string) => {
-    return apiCall('/settings', {
-      method: 'POST',
-      body: JSON.stringify({ key, value, description, category })
-    });
+    return apiCall('POST', '/settings', { key, value, description, category });
   },
 
   getAppConfig: async () => {
-    return apiCall('/settings/app-config');
+    return apiCall('GET', '/settings/app-config');
   },
 
   updateAppConfig: async (configData: any) => {
-    return apiCall('/settings/app-config', {
-      method: 'PUT',
-      body: JSON.stringify(configData)
-    });
+    return apiCall('PUT', '/settings/app-config', configData);
   }
 }; 

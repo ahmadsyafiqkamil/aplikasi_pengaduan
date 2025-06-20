@@ -125,6 +125,7 @@ const getComplaints = async (req, res) => {
 
       whereClause[Op.or] = supervisorClauses;
     }
+    // No specific filter for 'admin' or 'management', they can see all.
 
     const { count, rows: complaints } = await Complaint.findAndCountAll({
       where: whereClause,

@@ -16,7 +16,7 @@ const UserManagement: React.FC = () => {
     name: string;
     username: string;
     password?: string;
-    role: UserRole.SUPERVISOR | UserRole.AGENT;
+    role: UserRole.SUPERVISOR | UserRole.AGENT | UserRole.MANAGEMENT;
     serviceTypesHandled: ServiceType[];
   }>({
     name: '',
@@ -29,7 +29,8 @@ const UserManagement: React.FC = () => {
   const internalUsers = users.filter(u =>
     u.role?.toLowerCase() === 'supervisor' ||
     u.role?.toLowerCase() === 'agent' ||
-    u.role?.toLowerCase() === 'admin'
+    u.role?.toLowerCase() === 'admin' ||
+    u.role?.toLowerCase() === 'management'
   );
 
   const openModalForNew = () => {
@@ -44,7 +45,7 @@ const UserManagement: React.FC = () => {
     setFormData({
       name: user.name,
       username: user.username,
-      role: user.role as UserRole.SUPERVISOR | UserRole.AGENT, 
+      role: user.role as UserRole.SUPERVISOR | UserRole.AGENT | UserRole.MANAGEMENT, 
       serviceTypesHandled: user.serviceTypesHandled || [],
     });
     setError(null);
@@ -53,6 +54,9 @@ const UserManagement: React.FC = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    if (name === 'role' && value === UserRole.MANAGEMENT) {
+        setFormData(prev => ({ ...prev, serviceTypesHandled: [] }));
+    }
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
@@ -77,7 +81,7 @@ const UserManagement: React.FC = () => {
           name: formData.name,
           username: formData.username,
           role: formData.role.toLowerCase(),
-          service_types_handled: formData.serviceTypesHandled,
+          service_types_handled: (formData.role === UserRole.SUPERVISOR || formData.role === UserRole.AGENT) ? formData.serviceTypesHandled : [],
         };
         if(formData.password) updates.newPassword = formData.password;
         await updateUser(editingUser.id, updates);
@@ -87,7 +91,7 @@ const UserManagement: React.FC = () => {
           username: formData.username,
           password: formData.password!,
           role: formData.role.toLowerCase(),
-          service_types_handled: formData.serviceTypesHandled,
+          service_types_handled: (formData.role === UserRole.SUPERVISOR || formData.role === UserRole.AGENT) ? formData.serviceTypesHandled : [],
         };
         await addUser(newUser);
       }
@@ -123,7 +127,7 @@ const UserManagement: React.FC = () => {
       {error && <Alert type="error" message={error} onClose={() => setError(null)} className="mb-3"/>}
       <div className="flex justify-end mb-4">
         <Button onClick={openModalForNew} variant="primary">
-          + Tambah User (Supervisor/Agent)
+          + Tambah User Baru
         </Button>
       </div>
       <div className="overflow-x-auto bg-white shadow-md rounded-lg">
@@ -144,14 +148,19 @@ const UserManagement: React.FC = () => {
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.username}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{ROLES_CONFIG[user.role]?.name || user.role}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {user.serviceTypesHandled?.join(', ') || (user.role === UserRole.ADMIN ? 'Semua Layanan' : '-')}
+                  {user.serviceTypesHandled?.join(', ') || (user.role === UserRole.ADMIN || user.role === UserRole.MANAGEMENT ? 'Semua Layanan' : '-')}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                  {user.role !== UserRole.ADMIN && ( 
+                  {(user.role !== UserRole.ADMIN && user.role !== UserRole.MANAGEMENT) && (
                     <>
                     <Button onClick={() => openModalForEdit(user)} variant="outline" size="sm">Edit</Button>
                     <Button onClick={() => handleDelete(user.id)} variant="danger" size="sm" disabled={loggedInUser?.id === user.id}>Hapus</Button>
                     </>
+                  )}
+                  {user.role === UserRole.MANAGEMENT && (
+                    <Button onClick={() => handleDelete(user.id)} variant="danger" size="sm" disabled={loggedInUser?.id === user.id}>
+                      Hapus
+                    </Button>
                   )}
                 </td>
               </tr>
@@ -178,6 +187,7 @@ const UserManagement: React.FC = () => {
           options={[
             { value: UserRole.SUPERVISOR, label: ROLES_CONFIG[UserRole.SUPERVISOR].name },
             { value: UserRole.AGENT, label: ROLES_CONFIG[UserRole.AGENT].name },
+            { value: UserRole.MANAGEMENT, label: ROLES_CONFIG[UserRole.MANAGEMENT].name },
           ]}
           required
         />
