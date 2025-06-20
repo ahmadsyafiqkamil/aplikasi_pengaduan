@@ -19,17 +19,34 @@ const createComplaint = async (req, res) => {
     // Generate tracking ID
     const tracking_id = await generateTrackingId();
 
+    // Find a supervisor for the given service type
+    let supervisorId = null;
+    if (service_type) {
+      const supervisor = await User.findOne({
+        where: {
+          role: 'supervisor',
+          service_types_handled: {
+            [Op.like]: `%${service_type}%`
+          }
+        }
+      });
+      if (supervisor) {
+        supervisorId = supervisor.id;
+      }
+    }
+
     // Create complaint
     const complaint = await Complaint.create({
-      tracking_id,
-      is_anonymous,
-      reporter_name: is_anonymous ? null : reporter_name,
-      reporter_email,
-      reporter_whatsapp,
-      service_type,
-      incident_time,
+      trackingId: tracking_id,
+      isAnonymous: is_anonymous,
+      reporterName: is_anonymous ? null : reporter_name,
+      reporterEmail: reporter_email,
+      reporterWhatsApp: reporter_whatsapp,
+      serviceType: service_type,
+      incidentTime: incident_time,
       description,
-      custom_field_data
+      customFieldData: custom_field_data,
+      supervisorId,
     });
 
     // Create initial history entry
@@ -92,10 +109,21 @@ const getComplaints = async (req, res) => {
     if (req.user.role === 'agent') {
       whereClause.assigned_agent_id = req.user.id;
     } else if (req.user.role === 'supervisor') {
-      whereClause[Op.or] = [
-        { supervisor_id: req.user.id },
-        { assigned_agent_id: { [Op.in]: await getAgentIdsBySupervisor(req.user.id) } }
+      const supervisorClauses = [
+        { supervisorId: req.user.id },
+        { assignedAgentId: { [Op.in]: await getAgentIdsBySupervisor(req.user.id) } }
       ];
+
+      if (req.user.service_types_handled && req.user.service_types_handled.length > 0) {
+        supervisorClauses.push({
+          [Op.and]: [
+            { status: { [Op.in]: ['Baru', 'Sedang Diverifikasi'] } },
+            { serviceType: { [Op.in]: req.user.service_types_handled } }
+          ]
+        });
+      }
+
+      whereClause[Op.or] = supervisorClauses;
     }
 
     const { count, rows: complaints } = await Complaint.findAndCountAll({
@@ -236,6 +264,41 @@ const updateComplaint = async (req, res) => {
   }
 };
 
+// Delete a complaint
+const deleteComplaint = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const complaint = await Complaint.findByPk(id);
+    if (!complaint) {
+      return res.status(404).json({
+        success: false,
+        message: 'Pengaduan tidak ditemukan'
+      });
+    }
+
+    // Optional: Add more specific permission checks if needed, e.g., only Admin can delete.
+    // The route-level middleware already checks for Admin.
+
+    // Delete all associated history first to maintain integrity
+    await ComplaintHistory.destroy({ where: { complaint_id: id } });
+    
+    // Then delete the complaint
+    await complaint.destroy();
+
+    res.json({
+      success: true,
+      message: 'Pengaduan berhasil dihapus'
+    });
+  } catch (error) {
+    console.error('Delete complaint error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Gagal menghapus pengaduan. Terjadi kesalahan internal.'
+    });
+  }
+};
+
 // Assign complaint to agent
 const assignComplaint = async (req, res) => {
   try {
@@ -342,9 +405,20 @@ const getComplaintByTrackingId = async (req, res) => {
 
 // Helper functions
 const canUpdateComplaint = (user, complaint) => {
-  if (user.role === 'admin') return true;
-  if (user.role === 'supervisor' && complaint.supervisor_id === user.id) return true;
-  if (user.role === 'agent' && complaint.assigned_agent_id === user.id) return true;
+  if (user.role === 'admin') {
+    return true;
+  }
+  if (user.role === 'supervisor') {
+    const isAssignedSupervisor = user.id === complaint.supervisorId;
+    const canTakeActionOnNewComplaint = 
+      (complaint.status === 'Baru' || complaint.status === 'Sedang Diverifikasi') &&
+      user.service_types_handled?.includes(complaint.serviceType);
+
+    return isAssignedSupervisor || canTakeActionOnNewComplaint;
+  }
+  if (user.role === 'agent') {
+    return user.id === complaint.assignedAgentId;
+  }
   return false;
 };
 
@@ -364,6 +438,7 @@ module.exports = {
   getComplaints,
   getComplaintById,
   updateComplaint,
+  deleteComplaint,
   assignComplaint,
   getComplaintByTrackingId
 }; 

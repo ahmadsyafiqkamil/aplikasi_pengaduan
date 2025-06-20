@@ -2,6 +2,7 @@ import React, { createContext, useContext, ReactNode, useState, useEffect } from
 import { Complaint, ComplaintStatus, ComplaintHistoryEntry, User, UserRole, StatsData, AgentStat, ComplaintAttachment, ServiceType } from '../types';
 import { useAuth } from './useAuth';
 import { reportsAPI } from '../utils/api';
+import { snakeToCamel } from '../utils/helpers';
 
 interface ComplaintsContextType {
   complaints: Complaint[];
@@ -53,7 +54,8 @@ export const ComplaintsProvider: React.FC<{ children: ReactNode }> = ({ children
     try {
       const data = await reportsAPI.getAll();
       if (data.success && data.data && Array.isArray(data.data.complaints)) {
-        setComplaints(data.data.complaints);
+        // The api utility should handle the transformation. If not, transform here.
+        setComplaints(snakeToCamel(data.data.complaints));
       }
     } catch (error) {
       console.error('Failed to fetch complaints:', error);
@@ -65,8 +67,10 @@ export const ComplaintsProvider: React.FC<{ children: ReactNode }> = ({ children
 
   // Load complaints on mount
   useEffect(() => {
-    fetchComplaints();
-  }, []);
+    if(loggedInUser) { // Only fetch if user is logged in
+      fetchComplaints();
+    }
+  }, [loggedInUser]);
 
   const getComplaintById = (id: string): Complaint | undefined => {
     return complaints.find(c => c.id === id);
@@ -83,7 +87,7 @@ export const ComplaintsProvider: React.FC<{ children: ReactNode }> = ({ children
       const response = await reportsAPI.create(data);
 
       if (response.success) {
-        const newComplaint = response.data;
+        const newComplaint = snakeToCamel(response.data.complaint);
         setComplaints(prev => [newComplaint, ...prev]);
         return newComplaint;
       } else {
@@ -114,7 +118,7 @@ export const ComplaintsProvider: React.FC<{ children: ReactNode }> = ({ children
       });
 
       if (response.success) {
-        const updatedComplaint = response.data;
+        const updatedComplaint = snakeToCamel(response.data);
         setComplaints(prev => 
           prev.map(c => c.id === id ? updatedComplaint : c)
           );

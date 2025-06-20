@@ -29,7 +29,7 @@ router.put('/profile', authenticateToken, updateProfile);
 
 // Admin only routes
 router.post('/users', authenticateToken, requireAdmin, validateCreateUser, createUser);
-router.get('/users', authenticateToken, requireAdmin, getUsers);
+router.get('/users', authenticateToken, requireSupervisor, getUsers);
 router.put('/users/:id', authenticateToken, requireAdmin, validateUUID, updateUser);
 router.delete('/users/:id', authenticateToken, requireAdmin, validateUUID, deleteUser);
 

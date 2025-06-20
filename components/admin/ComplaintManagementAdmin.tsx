@@ -184,15 +184,15 @@ const ComplaintManagementAdmin: React.FC = () => {
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredComplaints.map(complaint => (
               <tr key={complaint.id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-primary font-semibold">{complaint.tracking_id}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{complaint.is_anonymous ? 'Anonim' : complaint.reporter_name}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{complaint.service_type}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-primary font-semibold">{complaint.trackingId}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{complaint.isAnonymous ? 'Anonim' : complaint.reporterName}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{complaint.serviceType}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${COMPLAINT_STATUS_OPTIONS.find(s=>s.value === complaint.status)?.color || 'bg-gray-100 text-gray-800'}`}>
                         {complaint.status}
                     </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{complaint.assignedAgent?.name  || '-'}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{complaint.assignedAgentName || '-'}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(complaint.updatedAt)}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                   <Button onClick={() => openEditModal(complaint)} variant="outline" size="sm">Edit</Button>

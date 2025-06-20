@@ -17,6 +17,7 @@ interface AuthContextType {
   addUser: (userData: CreateUserRequest) => Promise<void>;
   updateUser: (userId: string, updates: UpdateUserRequest) => Promise<void>;
   deleteUser: (userId: string) => Promise<void>;
+  getUserById: (userId: string) => User | undefined;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -32,6 +33,14 @@ const normalizeUserRole = (role: string): UserRole => {
   }
 };
 
+const transformUserFromApi = (apiUser: any): User => {
+  return {
+    ...apiUser,
+    role: normalizeUserRole(apiUser.role),
+    serviceTypesHandled: apiUser.service_types_handled || [],
+  };
+};
+
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [loggedInUser, setLoggedInUser] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>([]);
@@ -44,14 +53,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       try {
         const data = await authAPI.getUsers();
         if (data.success && data.data && Array.isArray(data.data.users)) {
-          setUsers(data.data.users);
+          const transformedUsers = data.data.users.map(transformUserFromApi);
+          setUsers(transformedUsers);
         }
       } catch (error) {
         console.error('Failed to fetch users:', error);
       }
     };
 
-    if (loggedInUser?.role === UserRole.ADMIN) {
+    if (loggedInUser?.role === UserRole.ADMIN || loggedInUser?.role === UserRole.SUPERVISOR) {
       fetchUsers();
     }
   }, [loggedInUser]);
@@ -69,8 +79,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const data = await authAPI.getProfile();
       if (data.success) {
-        const user = data.data;
-        user.role = normalizeUserRole(user.role);
+        const user = transformUserFromApi(data.data);
         setLoggedInUser(user);
       } else {
         // Token invalid, remove it
@@ -90,8 +99,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const data = await authAPI.login(username, password);
 
       if (data.success) {
-        const { token, user } = data.data;
-        user.role = normalizeUserRole(user.role);
+        const { token, user: apiUser } = data.data;
+        const user = transformUserFromApi(apiUser);
         
         // Store token
         localStorage.setItem('auth_token', token);
@@ -127,7 +136,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const data = await authAPI.addUser(userData);
       if (data.success) {
-        setUsers(prev => [...prev, { ...data.data, role: normalizeUserRole(data.data.role) }]);
+        const newUser = transformUserFromApi(data.data);
+        setUsers(prev => [...prev, newUser]);
       } else {
         throw new Error(data.message);
       }
@@ -140,9 +150,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const data = await authAPI.updateUser(userId, updates);
       if (data.success) {
+        const updatedUser = transformUserFromApi(data.data);
         setUsers(prev => prev.map(user => 
           user.id === userId 
-            ? { ...user, ...data.data, role: normalizeUserRole(data.data.role) }
+            ? { ...user, ...updatedUser }
             : user
         ));
       } else {
@@ -166,6 +177,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const getUserById = (userId: string): User | undefined => {
+    return users.find(user => user.id === userId);
+  };
+
   return (
     <AuthContext.Provider value={{ 
       loggedInUser, 
@@ -177,7 +192,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       clearError,
       addUser,
       updateUser,
-      deleteUser
+      deleteUser,
+      getUserById
     }}>
       {children}
     </AuthContext.Provider>

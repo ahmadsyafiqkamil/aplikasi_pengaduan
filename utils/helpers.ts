@@ -1,4 +1,3 @@
-
 export const formatDate = (dateString?: string, includeTime: boolean = true): string => {
   if (!dateString) return '-';
   try {
@@ -62,3 +61,17 @@ export const fileToBase64 = (file: File): Promise<string> => {
     reader.onerror = error => reject(error);
   });
 };
+
+// Convert snake_case keys to camelCase (recursive for objects/arrays)
+export function snakeToCamel(obj: any): any {
+  if (Array.isArray(obj)) {
+    return obj.map(snakeToCamel);
+  } else if (obj !== null && typeof obj === 'object') {
+    return Object.keys(obj).reduce((acc, key) => {
+      const camelKey = key.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+      acc[camelKey] = snakeToCamel(obj[key]);
+      return acc;
+    }, {} as any);
+  }
+  return obj;
+}

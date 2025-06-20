@@ -7,32 +7,37 @@ const Complaint = sequelize.define('Complaint', {
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true
   },
-  tracking_id: {
+  trackingId: {
     type: DataTypes.STRING(20),
     allowNull: false,
     unique: true,
+    field: 'tracking_id',
     comment: 'User-friendly tracking ID like PEN-2024-001'
   },
-  is_anonymous: {
+  isAnonymous: {
     type: DataTypes.BOOLEAN,
-    defaultValue: false
+    defaultValue: false,
+    field: 'is_anonymous'
   },
-  reporter_name: {
+  reporterName: {
     type: DataTypes.STRING(100),
-    allowNull: true
+    allowNull: true,
+    field: 'reporter_name'
   },
-  reporter_email: {
+  reporterEmail: {
     type: DataTypes.STRING(100),
     allowNull: true,
     validate: {
       isEmail: true
-    }
+    },
+    field: 'reporter_email'
   },
-  reporter_whatsapp: {
+  reporterWhatsApp: {
     type: DataTypes.STRING(20),
-    allowNull: true
+    allowNull: true,
+    field: 'reporter_whatsapp'
   },
-  service_type: {
+  serviceType: {
     type: DataTypes.ENUM(
       'Layanan Imigrasi',
       'Layanan Konsuler', 
@@ -40,19 +45,22 @@ const Complaint = sequelize.define('Complaint', {
       'Layanan Ekonomi',
       'Layanan Lainnya'
     ),
-    allowNull: false
+    allowNull: false,
+    field: 'service_type'
   },
-  incident_time: {
+  incidentTime: {
     type: DataTypes.DATE,
-    allowNull: false
+    allowNull: false,
+    field: 'incident_time'
   },
   description: {
     type: DataTypes.TEXT,
     allowNull: false
   },
-  custom_field_data: {
+  customFieldData: {
     type: DataTypes.JSON,
     allowNull: true,
+    field: 'custom_field_data',
     comment: 'Stores custom form field responses'
   },
   status: {
@@ -66,27 +74,30 @@ const Complaint = sequelize.define('Complaint', {
     ),
     defaultValue: 'Baru'
   },
-  assigned_agent_id: {
+  assignedAgentId: {
     type: DataTypes.UUID,
     allowNull: true,
+    field: 'assigned_agent_id',
     references: {
       model: 'users',
       key: 'id'
     }
   },
-  supervisor_id: {
+  supervisorId: {
     type: DataTypes.UUID,
     allowNull: true,
+    field: 'supervisor_id',
     references: {
       model: 'users',
       key: 'id'
     }
   },
-  agent_follow_up_notes: {
+  agentFollowUpNotes: {
     type: DataTypes.TEXT,
-    allowNull: true
+    allowNull: true,
+    field: 'agent_follow_up_notes'
   },
-  requested_status_change: {
+  requestedStatusChange: {
     type: DataTypes.ENUM(
       'Baru',
       'Sedang Diverifikasi',
@@ -95,30 +106,36 @@ const Complaint = sequelize.define('Complaint', {
       'Selesai',
       'Ditolak'
     ),
-    allowNull: true
+    allowNull: true,
+    field: 'requested_status_change'
   },
-  status_change_request_notes: {
+  statusChangeRequestNotes: {
     type: DataTypes.TEXT,
-    allowNull: true
+    allowNull: true,
+    field: 'status_change_request_notes'
   },
-  supervisor_review_notes: {
+  supervisorReviewNotes: {
     type: DataTypes.TEXT,
-    allowNull: true
+    allowNull: true,
+    field: 'supervisor_review_notes'
   },
   priority: {
     type: DataTypes.ENUM('low', 'medium', 'high', 'urgent'),
     defaultValue: 'medium'
   },
-  estimated_resolution_days: {
+  estimatedResolutionDays: {
     type: DataTypes.INTEGER,
-    allowNull: true
+    allowNull: true,
+    field: 'estimated_resolution_days'
   },
-  actual_resolution_date: {
+  actualResolutionDate: {
     type: DataTypes.DATE,
-    allowNull: true
+    allowNull: true,
+    field: 'actual_resolution_date'
   }
 }, {
   tableName: 'complaints',
+  underscored: true,
   indexes: [
     {
       fields: ['tracking_id']

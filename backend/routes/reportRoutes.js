@@ -5,6 +5,7 @@ const {
   getComplaints,
   getComplaintById,
   updateComplaint,
+  deleteComplaint,
   assignComplaint,
   getComplaintByTrackingId
 } = require('../controllers/complaintController');
@@ -33,6 +34,9 @@ router.put('/:id', authenticateToken, validateUUID, validateUpdateComplaint, upd
 
 // Admin/Supervisor routes
 router.post('/assign', authenticateToken, requireSupervisor, assignComplaint);
+
+// Admin only routes
+router.delete('/:id', authenticateToken, requireAdmin, validateUUID, deleteComplaint);
 
 router.get('/tracking/:trackingId', getComplaintByTrackingId);
 
