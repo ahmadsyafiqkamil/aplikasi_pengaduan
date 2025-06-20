@@ -1,0 +1,23 @@
+# Abaikan direktori node_modules di semua subdirektori
+**/node_modules
+
+# Abaikan file log npm
+npm-debug.log
+yarn-error.log
+
+# Abaikan direktori build/dist
+**/dist
+**/build
+
+# Abaikan konfigurasi editor dan sistem operasi
+.vscode
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+.DS_Store
+
+# Abaikan file git
+.git
+.gitignore 
